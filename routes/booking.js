@@ -69,7 +69,7 @@ router.post("/", async (req, res) => {
       const options = {
         amount: amount * 100,
         currency: "INR",
-        receipt: `receipt_booking_${bookingId}`,
+        receipt: bookingId.toString().substring(0, 40),
       };
 
       const order = await razorpay.orders.create(options);

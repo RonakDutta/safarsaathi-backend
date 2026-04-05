@@ -5,7 +5,16 @@ const morgan = require("morgan");
 require("dotenv").config();
 
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "https://safarsaathi-frontend.vercel.app/",
+    ],
+    credentials: true,
+  }),
+);
 app.use(morgan("dev"));
 
 app.use("/auth", require("./routes/jwtAuth"));

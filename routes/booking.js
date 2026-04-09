@@ -3,6 +3,7 @@ const pool = require("../db");
 const twilio = require("twilio");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 // Initialize Twilio
@@ -14,12 +15,22 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// Create the email sender
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
 const sendBookingMessage = async (
   name,
   pickup,
   duration,
   paymentMethod,
   phone,
+  email,
 ) => {
   const messageBody = `
 🚖 *New Booking Confirmed!*
@@ -29,13 +40,23 @@ const sendBookingMessage = async (
 ⏳ *Duration:* ${duration} Hours
 💳 *Payment:* ${paymentMethod}
 📞 *Phone:* +${phone}
+✉️ *Email:* ${email}
 
 A driver will be assigned to you shortly!`;
 
+  // Twilio
   await client.messages.create({
     body: messageBody,
     from: "whatsapp:" + process.env.TWILIO_PHONE_NUMBER,
     to: `whatsapp:+${phone}`,
+  });
+
+  // Email
+  await transporter.sendMail({
+    from: '"SafarSaathi Admin" <safarsaathi.cab@gmail.com>',
+    to: email,
+    subject: "Your SafarSaathi Ride is Confirmed! 🚖",
+    text: messageBody,
   });
 };
 
@@ -43,17 +64,18 @@ A driver will be assigned to you shortly!`;
 
 router.post("/", async (req, res) => {
   try {
-    const { name, pickup, phone, duration, paymentMethod, coordinates } =
+    const { name, pickup, phone, email, duration, paymentMethod, coordinates } =
       req.body;
 
     const amount = duration * 200;
 
     const newBooking = await pool.query(
-      "INSERT INTO bookings (user_name, pickup_location, phone, duration, payment_method, latitude, longitude, amount, payment_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'unpaid') RETURNING *",
+      "INSERT INTO bookings (user_name, pickup_location, phone, email, duration, payment_method, latitude, longitude, amount, payment_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'unpaid') RETURNING *",
       [
         name,
         pickup,
         phone,
+        email,
         duration,
         paymentMethod,
         coordinates?.lat,
@@ -88,7 +110,14 @@ router.post("/", async (req, res) => {
         key: process.env.RAZORPAY_KEY_ID,
       });
     } else {
-      await sendBookingMessage(name, pickup, duration, paymentMethod, phone);
+      await sendBookingMessage(
+        name,
+        pickup,
+        duration,
+        paymentMethod,
+        phone,
+        email,
+      );
 
       return res.json({
         requiresPayment: false,
@@ -134,6 +163,7 @@ router.post("/verify-payment", async (req, res) => {
         booking.duration,
         booking.payment_method,
         booking.phone,
+        booking.email,
       );
 
       res.json({ success: true, message: "Payment verified successfully" });

@@ -4,9 +4,20 @@ const authorize = require("../middleware/authorization");
 const twilio = require("twilio");
 const admin = require("../middleware/admin");
 const bcrypt = require("bcryptjs");
+const nodemailer = require("nodemailer");
 require("dotenv").config();
 
+// Inititate Twilio
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
+
+// Initiate email
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 // Get Dashboard Stats
 router.get("/stats", authorize, admin, async (req, res) => {
@@ -219,6 +230,13 @@ router.put("/assign-driver", authorize, admin, async (req, res) => {
       body: messageBody,
       from: "whatsapp:" + process.env.TWILIO_PHONE_NUMBER,
       to: `whatsapp:+${booking.phone}`,
+    });
+
+    await transporter.sendMail({
+      from: '"SafarSaathi Admin" <safarsaathi.cab@gmail.com>',
+      to: booking.email,
+      subject: "Your SafarSaathi Ride is Confirmed! 🚖",
+      text: messageBody,
     });
 
     res.json({ message: "Driver assigned and user notified!" });

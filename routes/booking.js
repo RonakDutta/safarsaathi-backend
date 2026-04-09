@@ -26,6 +26,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log("⚠️ Nodemailer Connection Error:", error);
+  } else {
+    console.log("✅ Nodemailer is ready to send messages!");
+  }
+});
+
 const sendBookingMessage = async (
   name,
   pickup,

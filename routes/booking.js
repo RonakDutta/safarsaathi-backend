@@ -27,14 +27,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-transporter.verify(function (error, success) {
-  if (error) {
-    console.log("⚠️ Nodemailer Connection Error:", error);
-  } else {
-    console.log("✅ Nodemailer is ready to send messages!");
-  }
-});
-
 const sendBookingMessage = async (
   name,
   pickup,
@@ -65,7 +57,7 @@ Ref: #${Date.now().toString().slice(-6)}`;
   });
 
   // Email
-  await transporter.sendMail({
+  transporter.sendMail({
     from: '"SafarSaathi Admin" <safarsaathi.cab@gmail.com>',
     to: email,
     subject: "Your SafarSaathi Ride is Confirmed! 🚖",

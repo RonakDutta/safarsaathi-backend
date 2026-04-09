@@ -235,7 +235,7 @@ router.put("/assign-driver", authorize, admin, async (req, res) => {
       to: `whatsapp:+${booking.phone}`,
     });
 
-    await transporter.sendMail({
+    transporter.sendMail({
       from: '"SafarSaathi Admin" <safarsaathi.cab@gmail.com>',
       to: booking.email,
       subject: "Your SafarSaathi Ride is Confirmed! 🚖",

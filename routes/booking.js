@@ -20,18 +20,11 @@ const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
   secure: false,
+  family: 4,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-});
-
-transporter.verify(function (error, success) {
-  if (error) {
-    console.log("⚠️ Nodemailer Connection Error:", error);
-  } else {
-    console.log("✅ Nodemailer is ready to send messages!");
-  }
 });
 
 const sendBookingMessage = async (

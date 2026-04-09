@@ -17,7 +17,9 @@ const razorpay = new Razorpay({
 
 // Create the email sender
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -42,7 +44,9 @@ const sendBookingMessage = async (
 📞 *Phone:* +${phone}
 ✉️ *Email:* ${email}
 
-A driver will be assigned to you shortly!`;
+A driver will be assigned to you shortly
+
+Ref: #${Date.now().toString().slice(-6)}`;
 
   // Twilio
   await client.messages.create({

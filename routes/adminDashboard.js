@@ -8,14 +8,12 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 // Inititate Twilio
-const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
+const twilioSid = process.env.TWILIO_ACCOUNT_SID || process.env.TWILIO_SID;
+const client = twilio(twilioSid, process.env.TWILIO_AUTH_TOKEN);
 
 // Initiate email
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  family: 4,
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -229,18 +227,26 @@ router.put("/assign-driver", authorize, admin, async (req, res) => {
 (Please give this 4-digit PIN to your driver ONLY when you have reached your destination to complete the ride.)
     `;
 
-    await client.messages.create({
-      body: messageBody,
-      from: "whatsapp:" + process.env.TWILIO_PHONE_NUMBER,
-      to: `whatsapp:+${booking.phone}`,
-    });
+    try {
+      await client.messages.create({
+        body: messageBody,
+        from: "whatsapp:" + process.env.TWILIO_PHONE_NUMBER,
+        to: `whatsapp:+${booking.phone}`,
+      });
+    } catch (twilioErr) {
+      console.error("Twilio WhatsApp Error:", twilioErr.message);
+    }
 
-    transporter.sendMail({
-      from: '"SafarSaathi Admin" <safarsaathi.cab@gmail.com>',
-      to: booking.email,
-      subject: "Your SafarSaathi Ride is Confirmed! 🚖",
-      text: messageBody,
-    });
+    try {
+      await transporter.sendMail({
+        from: `"SafarSaathi Admin" <${process.env.EMAIL_USER}>`,
+        to: booking.email,
+        subject: "Your SafarSaathi Ride is Confirmed! 🚖",
+        text: messageBody,
+      });
+    } catch (emailErr) {
+      console.error("Nodemailer Email Error:", emailErr.message);
+    }
 
     res.json({ message: "Driver assigned and user notified!" });
   } catch (err) {

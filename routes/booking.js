@@ -7,7 +7,8 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 // Initialize Twilio
-const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
+const twilioSid = process.env.TWILIO_ACCOUNT_SID || process.env.TWILIO_SID;
+const client = twilio(twilioSid, process.env.TWILIO_AUTH_TOKEN);
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -17,10 +18,7 @@ const razorpay = new Razorpay({
 
 // Create the email sender
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  family: 4,
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -50,19 +48,27 @@ A driver will be assigned to you shortly
 Ref: #${Date.now().toString().slice(-6)}`;
 
   // Twilio
-  await client.messages.create({
-    body: messageBody,
-    from: "whatsapp:" + process.env.TWILIO_PHONE_NUMBER,
-    to: `whatsapp:+${phone}`,
-  });
+  try {
+    await client.messages.create({
+      body: messageBody,
+      from: "whatsapp:" + process.env.TWILIO_PHONE_NUMBER,
+      to: `whatsapp:+${phone}`,
+    });
+  } catch (twilioErr) {
+    console.error("Twilio WhatsApp Error:", twilioErr.message);
+  }
 
   // Email
-  transporter.sendMail({
-    from: '"SafarSaathi Admin" <safarsaathi.cab@gmail.com>',
-    to: email,
-    subject: "Your SafarSaathi Ride is Confirmed! 🚖",
-    text: messageBody,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"SafarSaathi Admin" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your SafarSaathi Ride is Confirmed! 🚖",
+      text: messageBody,
+    });
+  } catch (emailErr) {
+    console.error("Nodemailer Email Error:", emailErr.message);
+  }
 };
 
 // 1. CREATE BOOKING & ORDER ROUTE
